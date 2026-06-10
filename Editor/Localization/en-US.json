@@ -1,0 +1,28 @@
+{
+  "entries": [
+    { "key": "rootDefault", "value": "Facial" },
+    { "key": "rootIcon", "value": "Menu Icon" },
+    { "key": "rootName", "value": "Menu Name" },
+    { "key": "installTarget", "value": "Expression Location" },
+    { "key": "parameterName", "value": "Parameter Name" },
+    { "key": "syncedParameter", "value": "Synced Parameter" },
+    { "key": "page", "value": "Page {0}" },
+    { "key": "slot", "value": "Slot {0}" },
+    { "key": "displayName", "value": "Display Name" },
+    { "key": "animation", "value": "Animation" },
+    { "key": "addPage", "value": "Add Page" },
+    { "key": "removeLastPage", "value": "Remove Last Page" },
+    { "key": "advancedOptions", "value": "Advanced Options" },
+    { "key": "thumbnailCamera", "value": "Thumbnail Camera" },
+    { "key": "thumbnailCameraOffsetX", "value": "Horizontal" },
+    { "key": "thumbnailCameraOffsetY", "value": "Vertical" },
+    { "key": "thumbnailCameraZoom", "value": "Zoom" },
+    { "key": "thumbnailPadding", "value": "Padding" },
+    { "key": "resetToDefault", "value": "Reset" },
+    { "key": "language", "value": "Language" },
+    { "key": "maxPages", "value": "The maximum page count with one Float parameter is {0}." },
+    { "key": "reset", "value": "Reset" },
+    { "key": "next", "value": "Next" },
+    { "key": "invalidAvatarDescriptor", "value": "This component must be placed under an avatar object with a VRCAvatarDescriptor. The descriptor must have Custom Expressions enabled, with both Expressions Menu and Expression Parameters assigned." }
+  ]
+}

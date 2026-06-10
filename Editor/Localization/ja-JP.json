@@ -1,0 +1,28 @@
+{
+  "entries": [
+    { "key": "rootDefault", "value": "表情" },
+    { "key": "rootIcon", "value": "メニューアイコン" },
+    { "key": "rootName", "value": "メニュー名" },
+    { "key": "installTarget", "value": "Expression の位置" },
+    { "key": "parameterName", "value": "パラメーター名" },
+    { "key": "syncedParameter", "value": "同期パラメーター" },
+    { "key": "page", "value": "ページ {0}" },
+    { "key": "slot", "value": "スロット {0}" },
+    { "key": "displayName", "value": "表示名" },
+    { "key": "animation", "value": "アニメーション" },
+    { "key": "addPage", "value": "ページを追加" },
+    { "key": "removeLastPage", "value": "最後のページを削除" },
+    { "key": "advancedOptions", "value": "詳細オプション" },
+    { "key": "thumbnailCamera", "value": "サムネイルカメラ" },
+    { "key": "thumbnailCameraOffsetX", "value": "左右" },
+    { "key": "thumbnailCameraOffsetY", "value": "上下" },
+    { "key": "thumbnailCameraZoom", "value": "ズーム" },
+    { "key": "thumbnailPadding", "value": "余白" },
+    { "key": "resetToDefault", "value": "初期化" },
+    { "key": "language", "value": "言語" },
+    { "key": "maxPages", "value": "Float パラメーター 1 個で使用できる最大ページ数は {0} ページです。" },
+    { "key": "reset", "value": "リセット" },
+    { "key": "next", "value": "次" },
+    { "key": "invalidAvatarDescriptor", "value": "このコンポーネントは、VRCAvatarDescriptor があるアバターオブジェクトの子に配置してください。また、VRCAvatarDescriptor の Custom Expressions を有効にし、Expressions Menu と Expression Parameters を登録してください。" }
+  ]
+}
