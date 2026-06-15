@@ -11,7 +11,6 @@ namespace SimpleFacialExpressionMenuTool.Editor
     internal sealed class SimpleFacialExpressionMenuEditor : UnityEditor.Editor
     {
         private const float LabelWidth = 128f;
-        private const float ToggleWidth = 35f;
         private const float ResetButtonWidth = 56f;
         private const float FieldSpacing = 0f;
         private const int PreviewDisplaySize = 96;
@@ -29,8 +28,8 @@ namespace SimpleFacialExpressionMenuTool.Editor
         private SerializedProperty _thumbnailCameraOffsetY;
         private SerializedProperty _thumbnailCameraZoom;
         private SerializedProperty _thumbnailPadding;
+        private SerializedProperty _layerPriority;
         private SerializedProperty _writeDefaults;
-        private SerializedProperty _disableGestureFxLayersWhenActive;
         private SerializedProperty _language;
         private readonly Dictionary<string, ReorderableList> _slotLists = new Dictionary<string, ReorderableList>();
         private bool _showAdvancedOptions;
@@ -52,9 +51,8 @@ namespace SimpleFacialExpressionMenuTool.Editor
             _thumbnailCameraOffsetY = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.thumbnailCameraOffsetY));
             _thumbnailCameraZoom = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.thumbnailCameraZoom));
             _thumbnailPadding = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.thumbnailPadding));
+            _layerPriority = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.layerPriority));
             _writeDefaults = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.writeDefaults));
-            _disableGestureFxLayersWhenActive = serializedObject.FindProperty(
-                nameof(SimpleFacialExpressionMenu.disableGestureFxLayersWhenActive));
             _language = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.language));
             _showAdvancedOptions = EditorPrefs.GetBool(AdvancedOptionsFoldoutKey(), false);
             _showThumbnailCameraOptions = EditorPrefs.GetBool(ThumbnailCameraFoldoutKey(), false);
@@ -211,15 +209,12 @@ namespace SimpleFacialExpressionMenuTool.Editor
             }
 
             EditorGUI.indentLevel++;
-            DrawRightAlignedToggle(
+            DrawProperty(
+                _layerPriority,
+                SimpleFacialExpressionLocalization.Label(language, "layerPriority"));
+            DrawProperty(
                 _writeDefaults,
                 SimpleFacialExpressionLocalization.Label(language, "writeDefaults"));
-            using (new EditorGUI.DisabledScope(_writeDefaults.boolValue))
-            {
-                DrawRightAlignedToggle(
-                    _disableGestureFxLayersWhenActive,
-                    SimpleFacialExpressionLocalization.Label(language, "disableGestureFxLayers"));
-            }
             EditorGUI.indentLevel--;
         }
 
@@ -637,18 +632,6 @@ namespace SimpleFacialExpressionMenuTool.Editor
             EditorGUIUtility.labelWidth = LabelWidth;
             EditorGUILayout.PropertyField(property, label);
             EditorGUIUtility.labelWidth = previousLabelWidth;
-            EditorGUILayout.Space(FieldSpacing);
-        }
-
-        private static void DrawRightAlignedToggle(SerializedProperty property, GUIContent label)
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUILayout.LabelField(label);
-                property.boolValue = EditorGUILayout.Toggle(
-                    property.boolValue,
-                    GUILayout.Width(ToggleWidth));
-            }
             EditorGUILayout.Space(FieldSpacing);
         }
 

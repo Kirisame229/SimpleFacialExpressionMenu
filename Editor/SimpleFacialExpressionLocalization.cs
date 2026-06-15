@@ -8,7 +8,7 @@ namespace SimpleFacialExpressionMenuTool.Editor
 {
     internal static class SimpleFacialExpressionLocalization
     {
-        private const string BasePath = "Packages/me.kirisame.sfem/Editor/Localization/";
+        private const string BasePath = "Packages/me.kirisame.simple-facial-expression-menu/Editor/Localization/";
         private const SimpleFacialExpressionLanguage FallbackLanguage = SimpleFacialExpressionLanguage.Japanese;
 
         private static readonly Dictionary<SimpleFacialExpressionLanguage, Dictionary<string, string>> Tables =

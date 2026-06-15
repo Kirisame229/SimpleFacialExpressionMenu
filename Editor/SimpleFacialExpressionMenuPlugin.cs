@@ -12,7 +12,6 @@ using UnityEditor.Animations;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
-using VRC.SDKBase;
 using Object = UnityEngine.Object;
 
 [assembly: ExportsPlugin(typeof(SimpleFacialExpressionMenuTool.Editor.SimpleFacialExpressionMenuPlugin))]
@@ -22,14 +21,14 @@ namespace SimpleFacialExpressionMenuTool.Editor
     [RunsOnPlatforms(WellKnownPlatforms.VRChatAvatar30)]
     internal sealed class SimpleFacialExpressionMenuPlugin : Plugin<SimpleFacialExpressionMenuPlugin>
     {
-        private const string EllipsisIconPath = "Packages/me.kirisame.sfem/Editor/Icon/Ellipsis.png";
-        private const string CrossIconPath = "Packages/me.kirisame.sfem/Editor/Icon/cross.png";
+        private const string EllipsisIconPath =
+            "Packages/me.kirisame.simple-facial-expression-menu/Editor/Icon/Ellipsis.png";
+        private const string CrossIconPath =
+            "Packages/me.kirisame.simple-facial-expression-menu/Editor/Icon/cross.png";
         private const int GeneratedIconSize = 256;
         private const int GeneratedIconLayer = 31;
         private const string BlendShapePrefix = "blendShape.";
         private const float ActivationEpsilon = 0.001f;
-        private const string GestureLeftParameter = "GestureLeft";
-        private const string GestureRightParameter = "GestureRight";
 
         public override string QualifiedName => "simple-facial-expression-menu";
         public override string DisplayName => "Simple Facial Expression Menu";
@@ -607,9 +606,6 @@ namespace SimpleFacialExpressionMenuTool.Editor
         {
             var animatorContext = context.Extension<AnimatorServicesContext>().ControllerContext;
             var fx = animatorContext.Controllers[VRCAvatarDescriptor.AnimLayerType.FX];
-            var gestureFxLayers = !component.writeDefaults && component.disableGestureFxLayersWhenActive
-                ? fx.Layers.Where(IsGestureDrivenFxLayer).ToArray()
-                : Array.Empty<VirtualLayer>();
             fx.Parameters = fx.Parameters.SetItem(component.parameterName, new AnimatorControllerParameter
             {
                 name = component.parameterName,
@@ -617,7 +613,12 @@ namespace SimpleFacialExpressionMenuTool.Editor
                 defaultFloat = 0
             });
 
-            var layer = fx.AddLayer(new LayerPriority(230), "Simple Facial Expression Menu: " + RootMenuName(component));
+            var layerPriority = component.layerPriority == 0
+                ? SimpleFacialExpressionMenu.DefaultLayerPriority
+                : component.layerPriority;
+            var layer = fx.AddLayer(
+                new LayerPriority(layerPriority),
+                "Simple Facial Expression Menu: " + RootMenuName(component));
             layer.DefaultWeight = 1;
             layer.BlendingMode = AnimatorLayerBlendingMode.Override;
 
@@ -634,24 +635,6 @@ namespace SimpleFacialExpressionMenuTool.Editor
                 new Vector3(360, 120, 0));
             expressionState.WriteDefaultValues = component.writeDefaults;
 
-            var expressionExitState = defaultState;
-            if (gestureFxLayers.Length > 0)
-            {
-                expressionState.Behaviours = expressionState.Behaviours.AddRange(
-                    CreateLayerWeightControls(gestureFxLayers, 0));
-
-                var restoreGestureFxState = stateMachine.AddState(
-                    "Restore Gesture FX Layers",
-                    null,
-                    new Vector3(360, 240, 0));
-                restoreGestureFxState.WriteDefaultValues = false;
-                restoreGestureFxState.Behaviours = restoreGestureFxState.Behaviours.AddRange(
-                    CreateLayerWeightControls(gestureFxLayers, 1));
-                restoreGestureFxState.Transitions = ImmutableList.Create(
-                    CreateTransition(defaultState));
-                expressionExitState = restoreGestureFxState;
-            }
-
             defaultState.Transitions = ImmutableList.Create(
                 CreateTransition(
                     expressionState,
@@ -661,99 +644,10 @@ namespace SimpleFacialExpressionMenuTool.Editor
                     CreateCondition(component.parameterName, AnimatorConditionMode.Less, -ActivationEpsilon)));
             expressionState.Transitions = ImmutableList.Create(
                 CreateTransition(
-                    expressionExitState,
+                    defaultState,
                     CreateCondition(component.parameterName, AnimatorConditionMode.Greater, -ActivationEpsilon),
                     CreateCondition(component.parameterName, AnimatorConditionMode.Less, ActivationEpsilon)));
             stateMachine.DefaultState = defaultState;
-        }
-
-        private static IEnumerable<StateMachineBehaviour> CreateLayerWeightControls(
-            IEnumerable<VirtualLayer> layers,
-            float goalWeight)
-        {
-            foreach (var layer in layers)
-            {
-                var control = ScriptableObject.CreateInstance<VRCAnimatorLayerControl>();
-                control.layer = layer.VirtualLayerIndex;
-                control.playable = VRC_AnimatorLayerControl.BlendableLayer.FX;
-                control.goalWeight = goalWeight;
-                control.blendDuration = 0;
-                yield return control;
-            }
-        }
-
-        private static bool IsGestureDrivenFxLayer(VirtualLayer layer)
-        {
-            return layer.StateMachine != null
-                   && StateMachineUsesGestureParameter(layer.StateMachine, new HashSet<VirtualStateMachine>());
-        }
-
-        private static bool StateMachineUsesGestureParameter(
-            VirtualStateMachine stateMachine,
-            HashSet<VirtualStateMachine> visited)
-        {
-            if (!visited.Add(stateMachine))
-            {
-                return false;
-            }
-
-            if (TransitionsUseGestureParameter(stateMachine.AnyStateTransitions)
-                || TransitionsUseGestureParameter(stateMachine.EntryTransitions)
-                || stateMachine.StateMachineTransitions.Values.Any(
-                    transitions => TransitionsUseGestureParameter(transitions)))
-            {
-                return true;
-            }
-
-            foreach (var childState in stateMachine.States)
-            {
-                var state = childState.State;
-                if (state != null
-                    && (TransitionsUseGestureParameter(state.Transitions)
-                        || IsGestureParameter(state.CycleOffsetParameter)
-                        || IsGestureParameter(state.MirrorParameter)
-                        || IsGestureParameter(state.SpeedParameter)
-                        || IsGestureParameter(state.TimeParameter)
-                        || MotionUsesGestureParameter(state.Motion)))
-                {
-                    return true;
-                }
-            }
-
-            return stateMachine.StateMachines.Any(
-                child => StateMachineUsesGestureParameter(child.StateMachine, visited));
-        }
-
-        private static bool TransitionsUseGestureParameter<TTransition>(IEnumerable<TTransition> transitions)
-            where TTransition : VirtualTransitionBase
-        {
-            return transitions.Any(
-                transition => transition.Conditions.Any(
-                    condition => IsGestureParameter(condition.parameter)));
-        }
-
-        private static bool MotionUsesGestureParameter(VirtualMotion motion)
-        {
-            if (!(motion is VirtualBlendTree blendTree))
-            {
-                return false;
-            }
-
-            if (IsGestureParameter(blendTree.BlendParameter)
-                || IsGestureParameter(blendTree.BlendParameterY))
-            {
-                return true;
-            }
-
-            return blendTree.Children.Any(
-                child => IsGestureParameter(child.DirectBlendParameter)
-                         || MotionUsesGestureParameter(child.Motion));
-        }
-
-        private static bool IsGestureParameter(string parameterName)
-        {
-            return string.Equals(parameterName, GestureLeftParameter, StringComparison.Ordinal)
-                   || string.Equals(parameterName, GestureRightParameter, StringComparison.Ordinal);
         }
 
         private static AnimationClip CreateEmptyClip(BuildContext context)

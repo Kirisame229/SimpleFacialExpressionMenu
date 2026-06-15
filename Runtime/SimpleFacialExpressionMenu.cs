@@ -72,6 +72,7 @@ namespace SimpleFacialExpressionMenuTool
         public const float MaxThumbnailCameraZoom = 3f;
         public const float MinThumbnailPadding = 0f;
         public const float MaxThumbnailPadding = 0.5f;
+        public const int DefaultLayerPriority = 230;
 
         public Texture2D rootMenuIcon;
         public string rootMenuName = string.Empty;
@@ -83,8 +84,8 @@ namespace SimpleFacialExpressionMenuTool
         public float thumbnailCameraOffsetY = DefaultThumbnailCameraOffsetY;
         public float thumbnailCameraZoom = DefaultThumbnailCameraZoom;
         public float thumbnailPadding = DefaultThumbnailPadding;
+        public int layerPriority;
         public bool writeDefaults = true;
-        public bool disableGestureFxLayersWhenActive;
         public SimpleFacialExpressionLanguage language = SimpleFacialExpressionLanguage.Japanese;
 
         private void Reset()
