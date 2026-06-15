@@ -18,6 +18,8 @@
     { "key": "thumbnailCameraOffsetY", "value": "Vertical" },
     { "key": "thumbnailCameraZoom", "value": "Zoom" },
     { "key": "thumbnailPadding", "value": "Padding" },
+    { "key": "writeDefaults", "value": "Write Defaults" },
+    { "key": "disableGestureFxLayers", "value": "Disable Gesture FX Layers" },
     { "key": "resetToDefault", "value": "Reset" },
     { "key": "language", "value": "Language" },
     { "key": "maxPages", "value": "The maximum page count with one Float parameter is {0}." },

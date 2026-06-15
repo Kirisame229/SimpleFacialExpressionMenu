@@ -11,12 +11,15 @@ namespace SimpleFacialExpressionMenuTool.Editor
     internal sealed class SimpleFacialExpressionMenuEditor : UnityEditor.Editor
     {
         private const float LabelWidth = 128f;
+        private const float ToggleWidth = 35f;
         private const float ResetButtonWidth = 56f;
         private const float FieldSpacing = 0f;
         private const int PreviewDisplaySize = 96;
         private const int PreviewRenderSize = 256;
         private const int PreviewLayer = 31;
         private const string AdvancedOptionsFoldoutKeyPrefix = "me.kirisame.sfem.advancedOptionsFoldout.";
+        private const string ThumbnailCameraFoldoutKeyPrefix = "me.kirisame.sfem.thumbnailCameraFoldout.";
+        private static readonly string[] LanguageDisplayNames = { "日本語", "한국어", "English" };
 
         private SerializedProperty _rootMenuIcon;
         private SerializedProperty _rootMenuName;
@@ -26,9 +29,12 @@ namespace SimpleFacialExpressionMenuTool.Editor
         private SerializedProperty _thumbnailCameraOffsetY;
         private SerializedProperty _thumbnailCameraZoom;
         private SerializedProperty _thumbnailPadding;
+        private SerializedProperty _writeDefaults;
+        private SerializedProperty _disableGestureFxLayersWhenActive;
         private SerializedProperty _language;
         private readonly Dictionary<string, ReorderableList> _slotLists = new Dictionary<string, ReorderableList>();
         private bool _showAdvancedOptions;
+        private bool _showThumbnailCameraOptions;
         private GameObject _previewRoot;
         private GameObject _previewCameraObject;
         private Camera _previewCamera;
@@ -46,8 +52,12 @@ namespace SimpleFacialExpressionMenuTool.Editor
             _thumbnailCameraOffsetY = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.thumbnailCameraOffsetY));
             _thumbnailCameraZoom = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.thumbnailCameraZoom));
             _thumbnailPadding = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.thumbnailPadding));
+            _writeDefaults = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.writeDefaults));
+            _disableGestureFxLayersWhenActive = serializedObject.FindProperty(
+                nameof(SimpleFacialExpressionMenu.disableGestureFxLayersWhenActive));
             _language = serializedObject.FindProperty(nameof(SimpleFacialExpressionMenu.language));
             _showAdvancedOptions = EditorPrefs.GetBool(AdvancedOptionsFoldoutKey(), false);
+            _showThumbnailCameraOptions = EditorPrefs.GetBool(ThumbnailCameraFoldoutKey(), false);
         }
 
         private void OnDisable()
@@ -84,6 +94,9 @@ namespace SimpleFacialExpressionMenuTool.Editor
             DrawPages(language);
 
             EditorGUILayout.Space(8);
+            DrawThumbnailCameraOptions(language);
+
+            EditorGUILayout.Space(8);
             DrawAdvancedOptions(language);
 
             EditorGUILayout.Space(8);
@@ -101,9 +114,87 @@ namespace SimpleFacialExpressionMenuTool.Editor
             DrawProperty(_installTargetMenu, SimpleFacialExpressionLocalization.Label(language, "installTarget"));
         }
 
-        private void DrawAdvancedOptions(SimpleFacialExpressionLanguage language)
+        private void DrawThumbnailCameraOptions(SimpleFacialExpressionLanguage language)
         {
             var component = (SimpleFacialExpressionMenu)target;
+            var previousShowThumbnailCameraOptions = _showThumbnailCameraOptions;
+            _showThumbnailCameraOptions = EditorGUILayout.Foldout(
+                _showThumbnailCameraOptions,
+                SimpleFacialExpressionLocalization.Text(language, "thumbnailCamera"),
+                true);
+            if (_showThumbnailCameraOptions != previousShowThumbnailCameraOptions)
+            {
+                EditorPrefs.SetBool(ThumbnailCameraFoldoutKey(), _showThumbnailCameraOptions);
+            }
+
+            if (!_showThumbnailCameraOptions)
+            {
+                CleanupPreviewResources();
+                return;
+            }
+
+            EditorGUI.indentLevel++;
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                var previewRect = GUILayoutUtility.GetRect(
+                    PreviewDisplaySize,
+                    PreviewDisplaySize,
+                    GUILayout.Width(PreviewDisplaySize),
+                    GUILayout.Height(PreviewDisplaySize));
+                DrawThumbnailPreview(component, previewRect);
+
+                using (new EditorGUILayout.VerticalScope())
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.FlexibleSpace();
+                        if (GUILayout.Button(
+                                new GUIContent(
+                                    SimpleFacialExpressionLocalization.Text(language, "resetToDefault"),
+                                    SimpleFacialExpressionLocalization.Text(language, "resetToDefault")),
+                                EditorStyles.miniButton,
+                                GUILayout.Width(ResetButtonWidth)))
+                        {
+                            _thumbnailCameraOffsetX.floatValue = SimpleFacialExpressionMenu.DefaultThumbnailCameraOffsetX;
+                            _thumbnailCameraOffsetY.floatValue = SimpleFacialExpressionMenu.DefaultThumbnailCameraOffsetY;
+                            _thumbnailCameraZoom.floatValue = SimpleFacialExpressionMenu.DefaultThumbnailCameraZoom;
+                            _thumbnailPadding.floatValue = SimpleFacialExpressionMenu.DefaultThumbnailPadding;
+                            Repaint();
+                        }
+                    }
+
+                    EditorGUI.BeginChangeCheck();
+                    DrawSlider(
+                        _thumbnailCameraOffsetX,
+                        SimpleFacialExpressionLocalization.Label(language, "thumbnailCameraOffsetX"),
+                        SimpleFacialExpressionMenu.MinThumbnailCameraOffset,
+                        SimpleFacialExpressionMenu.MaxThumbnailCameraOffset);
+                    DrawSlider(
+                        _thumbnailCameraOffsetY,
+                        SimpleFacialExpressionLocalization.Label(language, "thumbnailCameraOffsetY"),
+                        SimpleFacialExpressionMenu.MinThumbnailCameraOffset,
+                        SimpleFacialExpressionMenu.MaxThumbnailCameraOffset);
+                    DrawSlider(
+                        _thumbnailCameraZoom,
+                        SimpleFacialExpressionLocalization.Label(language, "thumbnailCameraZoom"),
+                        SimpleFacialExpressionMenu.MinThumbnailCameraZoom,
+                        SimpleFacialExpressionMenu.MaxThumbnailCameraZoom);
+                    DrawSlider(
+                        _thumbnailPadding,
+                        SimpleFacialExpressionLocalization.Label(language, "thumbnailPadding"),
+                        SimpleFacialExpressionMenu.MinThumbnailPadding,
+                        SimpleFacialExpressionMenu.MaxThumbnailPadding);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Repaint();
+                    }
+                }
+            }
+            EditorGUI.indentLevel--;
+        }
+
+        private void DrawAdvancedOptions(SimpleFacialExpressionLanguage language)
+        {
             var previousShowAdvancedOptions = _showAdvancedOptions;
             _showAdvancedOptions = EditorGUILayout.Foldout(
                 _showAdvancedOptions,
@@ -116,74 +207,20 @@ namespace SimpleFacialExpressionMenuTool.Editor
 
             if (!_showAdvancedOptions)
             {
-                CleanupPreviewResources();
                 return;
             }
 
-            if (_showAdvancedOptions)
+            EditorGUI.indentLevel++;
+            DrawRightAlignedToggle(
+                _writeDefaults,
+                SimpleFacialExpressionLocalization.Label(language, "writeDefaults"));
+            using (new EditorGUI.DisabledScope(_writeDefaults.boolValue))
             {
-                EditorGUI.indentLevel++;
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    var previewRect = GUILayoutUtility.GetRect(
-                        PreviewDisplaySize,
-                        PreviewDisplaySize,
-                        GUILayout.Width(PreviewDisplaySize),
-                        GUILayout.Height(PreviewDisplaySize));
-                    DrawThumbnailPreview(component, previewRect);
-
-                    using (new EditorGUILayout.VerticalScope())
-                    {
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            EditorGUILayout.LabelField(
-                                SimpleFacialExpressionLocalization.Text(language, "thumbnailCamera"),
-                                EditorStyles.miniBoldLabel);
-
-                            if (GUILayout.Button(
-                                    new GUIContent(
-                                        SimpleFacialExpressionLocalization.Text(language, "resetToDefault"),
-                                        SimpleFacialExpressionLocalization.Text(language, "resetToDefault")),
-                                    EditorStyles.miniButton,
-                                    GUILayout.Width(ResetButtonWidth)))
-                            {
-                                _thumbnailCameraOffsetX.floatValue = SimpleFacialExpressionMenu.DefaultThumbnailCameraOffsetX;
-                                _thumbnailCameraOffsetY.floatValue = SimpleFacialExpressionMenu.DefaultThumbnailCameraOffsetY;
-                                _thumbnailCameraZoom.floatValue = SimpleFacialExpressionMenu.DefaultThumbnailCameraZoom;
-                                _thumbnailPadding.floatValue = SimpleFacialExpressionMenu.DefaultThumbnailPadding;
-                                Repaint();
-                            }
-                        }
-
-                        EditorGUI.BeginChangeCheck();
-                        DrawSlider(
-                            _thumbnailCameraOffsetX,
-                            SimpleFacialExpressionLocalization.Label(language, "thumbnailCameraOffsetX"),
-                            SimpleFacialExpressionMenu.MinThumbnailCameraOffset,
-                            SimpleFacialExpressionMenu.MaxThumbnailCameraOffset);
-                        DrawSlider(
-                            _thumbnailCameraOffsetY,
-                            SimpleFacialExpressionLocalization.Label(language, "thumbnailCameraOffsetY"),
-                            SimpleFacialExpressionMenu.MinThumbnailCameraOffset,
-                            SimpleFacialExpressionMenu.MaxThumbnailCameraOffset);
-                        DrawSlider(
-                            _thumbnailCameraZoom,
-                            SimpleFacialExpressionLocalization.Label(language, "thumbnailCameraZoom"),
-                            SimpleFacialExpressionMenu.MinThumbnailCameraZoom,
-                            SimpleFacialExpressionMenu.MaxThumbnailCameraZoom);
-                        DrawSlider(
-                            _thumbnailPadding,
-                            SimpleFacialExpressionLocalization.Label(language, "thumbnailPadding"),
-                            SimpleFacialExpressionMenu.MinThumbnailPadding,
-                            SimpleFacialExpressionMenu.MaxThumbnailPadding);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            Repaint();
-                        }
-                    }
-                }
-                EditorGUI.indentLevel--;
+                DrawRightAlignedToggle(
+                    _disableGestureFxLayersWhenActive,
+                    SimpleFacialExpressionLocalization.Label(language, "disableGestureFxLayers"));
             }
+            EditorGUI.indentLevel--;
         }
 
         private string AdvancedOptionsFoldoutKey()
@@ -200,6 +237,22 @@ namespace SimpleFacialExpressionMenuTool.Editor
             }
 
             return AdvancedOptionsFoldoutKeyPrefix + globalObjectId;
+        }
+
+        private string ThumbnailCameraFoldoutKey()
+        {
+            if (target == null)
+            {
+                return ThumbnailCameraFoldoutKeyPrefix + "unknown";
+            }
+
+            var globalObjectId = GlobalObjectId.GetGlobalObjectIdSlow(target).ToString();
+            if (string.IsNullOrEmpty(globalObjectId))
+            {
+                globalObjectId = target.GetInstanceID().ToString();
+            }
+
+            return ThumbnailCameraFoldoutKeyPrefix + globalObjectId;
         }
 
         private void DrawThumbnailPreview(SimpleFacialExpressionMenu component, Rect rect)
@@ -568,7 +621,14 @@ namespace SimpleFacialExpressionMenuTool.Editor
 
         private void DrawLanguage(SimpleFacialExpressionLanguage language)
         {
-            DrawProperty(_language, SimpleFacialExpressionLocalization.Label(language, "language"));
+            var previousLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = LabelWidth;
+            _language.enumValueIndex = EditorGUILayout.Popup(
+                SimpleFacialExpressionLocalization.Label(language, "language"),
+                _language.enumValueIndex,
+                LanguageDisplayNames);
+            EditorGUIUtility.labelWidth = previousLabelWidth;
+            EditorGUILayout.Space(FieldSpacing);
         }
 
         private static void DrawProperty(SerializedProperty property, GUIContent label)
@@ -577,6 +637,18 @@ namespace SimpleFacialExpressionMenuTool.Editor
             EditorGUIUtility.labelWidth = LabelWidth;
             EditorGUILayout.PropertyField(property, label);
             EditorGUIUtility.labelWidth = previousLabelWidth;
+            EditorGUILayout.Space(FieldSpacing);
+        }
+
+        private static void DrawRightAlignedToggle(SerializedProperty property, GUIContent label)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(label);
+                property.boolValue = EditorGUILayout.Toggle(
+                    property.boolValue,
+                    GUILayout.Width(ToggleWidth));
+            }
             EditorGUILayout.Space(FieldSpacing);
         }
 

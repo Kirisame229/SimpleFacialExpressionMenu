@@ -83,6 +83,8 @@ namespace SimpleFacialExpressionMenuTool
         public float thumbnailCameraOffsetY = DefaultThumbnailCameraOffsetY;
         public float thumbnailCameraZoom = DefaultThumbnailCameraZoom;
         public float thumbnailPadding = DefaultThumbnailPadding;
+        public bool writeDefaults = true;
+        public bool disableGestureFxLayersWhenActive;
         public SimpleFacialExpressionLanguage language = SimpleFacialExpressionLanguage.Japanese;
 
         private void Reset()

@@ -18,6 +18,8 @@
     { "key": "thumbnailCameraOffsetY", "value": "上下" },
     { "key": "thumbnailCameraZoom", "value": "ズーム" },
     { "key": "thumbnailPadding", "value": "余白" },
+    { "key": "writeDefaults", "value": "Write Defaults" },
+    { "key": "disableGestureFxLayers", "value": "ジェスチャー FX レイヤーを無効化" },
     { "key": "resetToDefault", "value": "初期化" },
     { "key": "language", "value": "言語" },
     { "key": "maxPages", "value": "Float パラメーター 1 個で使用できる最大ページ数は {0} ページです。" },
